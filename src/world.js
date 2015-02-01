@@ -45,10 +45,11 @@ buildings.map(function (bldg) {
   world[bldg.y][bldg.x].push(bldg);
 });
 
+
 var view = {
   selected: null,
   highlighted: null,
-}
+};
 
 module.exports = {
   world: world,

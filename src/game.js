@@ -1,35 +1,31 @@
 var React = require('react/addons'),
     cx = React.addons.classSet,
     { PropTypes } = React,
-    { Cursor, ImmutableOptimizations } = require('react-cursor');
+    Immutable = require('immutable'),
+    Cursor = require('immutable/contrib/cursor');
 
 var Cell = React.createClass({
-  mixins: [ImmutableOptimizations(['cell', 'view'])],
-
-  propTypes: {
-    cell: PropTypes.instanceOf(Cursor).isRequired,
-    view: PropTypes.instanceOf(Cursor).isRequired,
-  },
-
   highlightTile() {
-    this.props.view.refine('highlighted').set(this.getLastTile());
+    this.props.view.highlighted = this.getLastTile();
+    this.props.reRender();
   },
 
   selectTile() {
-    this.props.view.refine('selected').set(this.getLastTile());
+    this.props.view.selected = this.getLastTile();
+    this.props.reRender();
   },
 
   getLastTile() {
-    return this.props.cell.refine(this.props.cell.value.length - 1).value;
+    return this.props.cell[this.props.cell.size - 1];
   },
 
   render() {
-    var tiles = this.props.cell.value.map((tile, i) => {
+    var tiles = this.props.cell.map((tile, i) => {
       var classes = cx({
         'tile': true,
         [tile.type]: true,
-        'highlighted': this.props.view.refine('highlighted').value === this.getLastTile(),
-        'selected': this.props.view.refine('selected').value === this.getLastTile(),
+        'highlighted': this.props.view.highlighted === this.getLastTile(),
+        'selected': this.props.view.selected === this.getLastTile(),
       });
 
       return (
@@ -50,19 +46,13 @@ var Cell = React.createClass({
 })
 
 var Row = React.createClass({
-  mixins: [ImmutableOptimizations(['row', 'view'])],
-
-  propTypes: {
-    row: PropTypes.instanceOf(Cursor).isRequired,
-    view: PropTypes.instanceOf(Cursor).isRequired,
-  },
-
   render() {
-    var cells = this.props.row.value.map((_, i) => {
+    var cells = this.props.row.map((cell, i) => {
       return (
         <Cell
-          cell={this.props.row.refine(i)}
+          cell={cell}
           view={this.props.view}
+          reRender={this.props.reRender}
           key={i} />
       );
     });
@@ -82,18 +72,20 @@ var Game = React.createClass({
   },
 
   getInitialState: function () {
-    return this.props; // top level - might be ok?
+    return this.props;
+  },
+
+  reRender: function () {
+    this.forceUpdate();
   },
 
   render() {
-    var cursor = Cursor.build(this),
-        world = cursor.refine('world'),
-        view = cursor.refine('view'),
-        rows = world.value.map((_, i) => {
+    var rows = this.state.world.map((row, i) => {
       return (
         <Row
-          row={world.refine(i)}
-          view={view}
+          row={row}
+          view={this.state.view}
+          reRender={this.reRender}
           key={i} />
       );
     });
